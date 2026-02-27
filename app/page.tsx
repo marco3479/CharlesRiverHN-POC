@@ -93,7 +93,7 @@ export default function Page() {
   };
 
   return (
-    <main className="min-h-screen overflow-y-auto bg-white px-5 py-4 lg:px-8">
+    <main className="min-h-screen overflow-y-auto bg-violet-50/40 px-5 py-4 lg:px-8">
       <div className="mx-auto max-w-7xl space-y-4">
         <header className="space-y-2">
           <Image
@@ -102,9 +102,9 @@ export default function Page() {
             priority
             quality={100}
             sizes="(max-width: 768px) 35vw, 110px"
-            className="h-auto w-full max-w-[110px] rounded-xl border border-slate-200 bg-white object-contain shadow-sm"
+            className="h-auto w-full max-w-[110px] rounded-xl border border-violet-200 bg-white object-contain shadow-sm"
           />
-          <p className="text-xs text-slate-600">AI Support Copilot embedded in Epic MyChart</p>
+          <p className="text-xs text-violet-700/80">AI Support Copilot embedded in Epic MyChart</p>
           <div className="badge">
             {connectedToMaven === null
               ? "Checking connection..."
@@ -116,9 +116,9 @@ export default function Page() {
 
         <section className="grid grid-cols-1 gap-4 xl:grid-cols-3">
           <div className="card space-y-3">
-            <h2 className="text-base font-semibold text-slate-900">Patient Question</h2>
+            <h2 className="text-base font-semibold text-violet-950">Patient Question</h2>
             <select
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
+              className="w-full rounded-xl border border-violet-200 bg-white px-3 py-2 text-sm text-violet-950 focus:border-violet-400 focus:outline-none"
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
             >
@@ -129,39 +129,39 @@ export default function Page() {
               ))}
             </select>
             <textarea
-              className="h-24 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none ring-0 focus:border-slate-400"
+              className="h-24 w-full rounded-xl border border-violet-200 px-3 py-2 text-sm text-violet-950 outline-none ring-0 focus:border-violet-400"
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
             />
             <button
               onClick={runDemo}
               disabled={loading}
-              className="w-full rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
+              className="w-full rounded-xl bg-violet-700 px-4 py-2 text-sm font-medium text-white transition hover:bg-violet-800 disabled:cursor-not-allowed disabled:opacity-70"
             >
               {loading ? "Running demo..." : "Run demo"}
             </button>
           </div>
 
-          <div className="card space-y-3 border-slate-300 bg-slate-50/70">
-            <h2 className="text-base font-semibold text-slate-900">Context</h2>
+          <div className="card space-y-3 border-fuchsia-300 bg-fuchsia-100">
+            <h2 className="text-base font-semibold text-fuchsia-950">Context</h2>
 
-            <div className="space-y-2 rounded-xl border border-slate-300 bg-slate-100 p-4">
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+            <div className="space-y-2 rounded-xl border border-fuchsia-300 bg-fuchsia-200/70 p-4">
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-fuchsia-800">
                 Connected Systems
               </h3>
-              <ul className="space-y-1 text-sm text-slate-700">
+              <ul className="space-y-1 text-sm text-fuchsia-950/85">
                 {connectedSystems.map((system) => (
                   <li key={system}>- {system}</li>
                 ))}
               </ul>
             </div>
 
-            <div className="space-y-2 rounded-xl border border-slate-200 p-4">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+            <div className="space-y-2 rounded-xl border border-fuchsia-300 bg-fuchsia-200/55 p-4">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-fuchsia-800/80">
                 Epic FHIR Data
               </p>
               {ehrData ? (
-                <ul className="space-y-1 text-sm text-slate-700">
+                <ul className="space-y-1 text-sm text-fuchsia-950/85">
                   <li>Patient: {ehrData.patient.name[0]?.given.join(" ")} {ehrData.patient.name[0]?.family}</li>
                   <li>Encounter: {ehrData.encounter.id}</li>
                   <li>Encounter class: {ehrData.encounter.class.display}</li>
@@ -169,24 +169,24 @@ export default function Page() {
                   <li>Payor: {ehrData.coverage.payor[0]?.display}</li>
                 </ul>
               ) : (
-                <p className="text-sm text-slate-500">Run the demo to load Epic resources.</p>
+                <p className="text-sm text-fuchsia-900/70">Run the demo to load Epic resources.</p>
               )}
             </div>
 
-            <div className="space-y-2 rounded-xl border border-slate-200 p-4">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+            <div className="space-y-2 rounded-xl border border-fuchsia-300 bg-fuchsia-200/55 p-4">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-fuchsia-800/80">
                 Waystar Claim Record
               </p>
               {billingRecord ? (
                 <div className="space-y-2">
-                  <ul className="space-y-1 text-sm text-slate-700">
+                  <ul className="space-y-1 text-sm text-fuchsia-950/85">
                     <li>Claim: {billingRecord.claimId}</li>
                     <li>Status: {billingRecord.status}</li>
                     <li>Allowed: ${billingRecord.allowedAmount.toFixed(2)}</li>
                     <li>Patient responsibility: ${billingRecord.patientResponsibility.toFixed(2)}</li>
                     <li>Deductible applied: ${billingRecord.deductibleApplied.toFixed(2)}</li>
                   </ul>
-                  <ul className="space-y-1 text-xs text-slate-600">
+                  <ul className="space-y-1 text-xs text-fuchsia-900/80">
                     {billingRecord.lineItems.map((item) => (
                       <li key={item.cptCode}>
                         CPT {item.cptCode}: ${item.patientResponsibility.toFixed(2)} patient share
@@ -195,59 +195,59 @@ export default function Page() {
                   </ul>
                 </div>
               ) : (
-                <p className="text-sm text-slate-500">Run the demo to load Waystar claim data.</p>
+                <p className="text-sm text-fuchsia-900/70">Run the demo to load Waystar claim data.</p>
               )}
             </div>
 
-            <div className="space-y-2 rounded-xl border border-slate-200 p-4">
-              <h3 className="text-sm font-semibold text-slate-700">Knowledge Base</h3>
+            <div className="space-y-2 rounded-xl border border-fuchsia-300 bg-fuchsia-200/55 p-4">
+              <h3 className="text-sm font-semibold text-fuchsia-950">Knowledge Base</h3>
               {knowledgeItems.length ? (
-                <ul className="space-y-2 text-sm text-slate-700">
+                <ul className="space-y-2 text-sm text-fuchsia-950/85">
                   {knowledgeItems.map((item) => (
-                    <li key={`${item.source}-${item.title}`} className="rounded-lg border border-slate-200 p-2">
-                      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                    <li key={`${item.source}-${item.title}`} className="rounded-lg border border-fuchsia-300 bg-fuchsia-100 p-2">
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-fuchsia-800/80">
                         Confluence Article
                       </p>
-                      <p className="mt-1 font-medium text-slate-800">{item.title}</p>
-                      <p className="text-xs text-slate-600">{item.snippet}</p>
+                      <p className="mt-1 font-medium text-fuchsia-950">{item.title}</p>
+                      <p className="text-xs text-fuchsia-950/75">{item.snippet}</p>
                     </li>
                   ))}
                 </ul>
               ) : (
-                <p className="text-sm text-slate-500">Run the demo to search policy knowledge sources.</p>
+                <p className="text-sm text-fuchsia-900/70">Run the demo to search policy knowledge sources.</p>
               )}
             </div>
           </div>
 
           <div className="card space-y-3">
-            <h2 className="text-base font-semibold text-slate-900">Agent Answer</h2>
+            <h2 className="text-base font-semibold text-violet-950">Agent Answer</h2>
             {loading && !agentAnswer ? (
               <div className="space-y-3 animate-pulse">
-                <div className="h-4 w-3/4 rounded bg-slate-200" />
-                <div className="h-3 w-full rounded bg-slate-200" />
-                <div className="h-3 w-11/12 rounded bg-slate-200" />
-                <div className="h-3 w-2/3 rounded bg-slate-200" />
+                <div className="h-4 w-3/4 rounded bg-violet-200/80" />
+                <div className="h-3 w-full rounded bg-violet-200/80" />
+                <div className="h-3 w-11/12 rounded bg-violet-200/80" />
+                <div className="h-3 w-2/3 rounded bg-violet-200/80" />
               </div>
             ) : agentAnswer ? (
               <div className="space-y-3">
-                <p className="text-sm leading-6 text-slate-800">{agentAnswer.summary}</p>
+                <p className="text-sm leading-6 text-violet-950/90">{agentAnswer.summary}</p>
                 <div>
-                  <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">Explanation</h3>
-                  <ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-slate-700">
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-violet-700/80">Explanation</h3>
+                  <ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-violet-900/85">
                     {agentAnswer.explanation.map((item, idx) => (
                       <li key={idx}>{item}</li>
                     ))}
                   </ul>
                 </div>
                 <div>
-                  <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">Next steps</h3>
-                  <ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-slate-700">
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-violet-700/80">Next steps</h3>
+                  <ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-violet-900/85">
                     {agentAnswer.next_steps.map((item, idx) => (
                       <li key={idx}>{item}</li>
                     ))}
                   </ul>
                 </div>
-                <div className="space-y-1 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
+                <div className="space-y-1 rounded-xl border border-violet-200 bg-violet-50 p-3 text-xs text-violet-800/85">
                   <div className="flex items-center justify-between">
                     <span>Confidence: {(agentAnswer.confidence * 100).toFixed(0)}%</span>
                     <span>{agentAnswer.sources_used.length} sources</span>
@@ -260,7 +260,7 @@ export default function Page() {
                 </div>
                 <button
                   onClick={escalate}
-                  className="w-full rounded-xl border border-rose-300 bg-rose-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-300"
+                  className="w-full rounded-xl border border-fuchsia-300 bg-fuchsia-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-fuchsia-700 focus:outline-none focus:ring-2 focus:ring-fuchsia-300"
                 >
                   Escalate to billing specialist
                 </button>
@@ -277,7 +277,7 @@ export default function Page() {
                 )}
               </div>
             ) : (
-              <p className="text-sm text-slate-500">Run the demo to generate an agent response.</p>
+              <p className="text-sm text-violet-800/70">Run the demo to generate an agent response.</p>
             )}
           </div>
         </section>
