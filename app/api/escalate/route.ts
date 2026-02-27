@@ -1,8 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createSupportCase } from "@/lib/mock-integrations";
 
 export async function POST(request: NextRequest) {
-  const { invoiceId } = (await request.json()) as { invoiceId: string; question: string };
-  const ticketId = `TKT-${Date.now().toString().slice(-7)}-${invoiceId ?? "NA"}`;
+  const { claimId, question } = (await request.json()) as {
+    claimId: string;
+    question: string;
+  };
 
-  return NextResponse.json({ ticketId, status: "created" as const });
+  if (!claimId || !question) {
+    return NextResponse.json({ error: "claimId and question are required" }, { status: 400 });
+  }
+
+  const supportCase = createSupportCase({ claimId, question });
+
+  return NextResponse.json(supportCase);
 }

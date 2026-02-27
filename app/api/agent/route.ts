@@ -1,130 +1,102 @@
 import { NextRequest, NextResponse } from "next/server";
-import { hasMavenCredentials } from "@/lib/maven";
-import { AgentResponse, BillingRecord } from "@/lib/types";
+import { AgentResponse } from "@/lib/types";
+import {
+  createSupportCase,
+  getBillingClaim,
+  getCoverage,
+  searchKnowledgeBase
+} from "@/lib/mock-integrations";
 
 type AgentInput = {
   question: string;
-  billingRecord: BillingRecord;
-  policySnippets: string[];
+  patientId: string;
+  encounterId: string;
 };
 
-function buildDeterministicResponse(input: AgentInput): AgentResponse {
-  const { question, billingRecord, policySnippets } = input;
-  const mentionPaymentPlan = /payment plan|installment|monthly/i.test(question);
-  const mentionDuplicate = /charged twice|duplicate|double/i.test(question);
+function buildToolDrivenResponse(input: AgentInput): AgentResponse {
+  const question = input.question.trim();
+
+  // Tool: Waystar RCM claim retrieval
+  const claim = getBillingClaim(input.patientId, input.encounterId);
+  // Tool: Epic FHIR coverage retrieval
+  const coverage = getCoverage(input.patientId, input.encounterId);
+  // Tool: Knowledge base search over Confluence
+  const kbResults = searchKnowledgeBase(question);
+
+  const asksPaymentPlan = /payment plan|installment|monthly|balance/.test(question.toLowerCase());
+  const asksDispute = /duplicate|double charge|dispute|appeal|charged twice/.test(question.toLowerCase());
+
+  const maybeCase = asksDispute
+    ? createSupportCase({
+        claimId: claim.claimId,
+        question
+      })
+    : null;
 
   const explanation = [
-    `Invoice ${billingRecord.invoiceId} shows total $${billingRecord.total}, paid $${billingRecord.paid}, leaving balance $${billingRecord.balance}.`,
-    `Current status is ${billingRecord.status} with due date ${billingRecord.dueDate}.`
+    `Waystar claim ${claim.claimId} is ${claim.status} with allowed amount $${claim.allowedAmount.toFixed(2)} and patient responsibility $${claim.patientResponsibility.toFixed(2)}.`,
+    `Epic coverage ${coverage.id} shows active ${coverage.type.text} coverage with payor ${coverage.payor[0]?.display ?? "Unknown payor"}.`,
+    `EOB indicates deductible applied is $${claim.deductibleApplied.toFixed(2)}.`
   ];
 
-  if (mentionDuplicate) {
-    explanation.push("The question indicates a possible duplicate charge, so an itemized coding review is recommended.");
+  if (asksPaymentPlan) {
+    explanation.push("Knowledge base guidance indicates payment plans are available for balances above policy thresholds.");
   }
 
-  if (mentionPaymentPlan) {
-    explanation.push("Policy supports installment plans for balances above $250.");
+  if (asksDispute) {
+    explanation.push("Potential duplicate-charge pattern detected from the question; escalation to billing operations is recommended.");
   }
 
-  const nextSteps = mentionPaymentPlan
+  const nextSteps = asksPaymentPlan
     ? [
-        "Offer a 6 or 12-month payment plan and confirm preferred monthly amount.",
-        "Send payment plan consent link and first due date.",
-        "Escalate to billing specialist if patient requests hardship adjustment."
+        "Offer a 6 or 12-month payment plan option and capture preferred monthly amount.",
+        "Provide line-level EOB explanation for each CPT code on the claim.",
+        "Document patient consent and send payment plan terms through MyChart messaging."
       ]
     : [
-        "Share an itemized bill to explain each line item.",
-        "Validate insurance adjudication details and deductible application.",
-        "Escalate if patient contests coding or requests a formal dispute review."
+        "Share claim-level EOB details and explain deductible + coinsurance impact.",
+        "Review each CPT line item against encounter documentation.",
+        "If patient disputes remain, open a Salesforce Health Cloud case for specialist follow-up."
       ];
 
+  if (maybeCase) {
+    nextSteps.push(
+      `Salesforce case ${maybeCase.caseId} created (${maybeCase.priority}) with estimated response time ${maybeCase.estimatedResponseTime}.`
+    );
+  }
+
+  const summary = asksPaymentPlan
+    ? "Your claim has been adjudicated and your remaining patient responsibility is eligible for payment plan review."
+    : "Your balance is driven by deductible and coinsurance after claim adjudication; line-level review can clarify each charge.";
+
   return {
-    summary:
-      mentionPaymentPlan
-        ? "Your balance is eligible for a payment plan, and we can spread the remaining amount into monthly installments."
-        : "Your balance appears tied to ER and diagnostic services after insurance processing; we can review each charge and address any dispute.",
+    summary,
     explanation,
     next_steps: nextSteps,
-    confidence: mentionDuplicate ? 0.82 : 0.88,
-    citations: [
-      "billing.invoiceId",
-      "billing.total",
-      "billing.paid",
-      "billing.balance",
-      "billing.dueDate",
-      ...policySnippets.slice(0, 3).map((_, i) => `policy[${i}]`)
+    confidence: maybeCase ? 0.84 : 0.9,
+    sources_used: [
+      `Waystar claimId: ${claim.claimId}`,
+      `Epic encounterId: ${input.encounterId}`,
+      ...kbResults.slice(0, 3).map((item) => `${item.source}: ${item.title}`)
     ]
   };
 }
 
-async function callMaven(input: AgentInput): Promise<AgentResponse | null> {
-  try {
-    const sdk = await import("mavenagi");
-    const MavenAGIClient = (sdk as any).MavenAGIClient;
-    if (!MavenAGIClient) {
-      return null;
-    }
-
-    const client = new MavenAGIClient({
-      appId: process.env.MAVEN_APP_ID,
-      appSecret: process.env.MAVEN_APP_SECRET,
-      orgId: process.env.MAVEN_ORG_ID
-    });
-
-    const prompt = [
-      "You are a hospital billing support agent.",
-      "Return strictly valid JSON with keys: summary, explanation, next_steps, confidence, citations.",
-      "explanation and next_steps must be arrays of concise bullet strings.",
-      `Patient question: ${input.question}`,
-      `Billing record: ${JSON.stringify(input.billingRecord)}`,
-      `Policy snippets: ${JSON.stringify(input.policySnippets)}`
-    ].join("\n");
-
-    const response = await (client as any).agents.generate({
-      agentId: process.env.MAVEN_AGENT_ID,
-      input: prompt
-    });
-
-    const rawText =
-      response?.outputText ??
-      response?.text ??
-      response?.output?.[0]?.content?.[0]?.text ??
-      response?.result ??
-      "";
-
-    if (!rawText) return null;
-
-    const parsed = JSON.parse(rawText) as AgentResponse;
-
-    return {
-      summary: parsed.summary,
-      explanation: parsed.explanation ?? [],
-      next_steps: parsed.next_steps ?? [],
-      confidence: Number(parsed.confidence ?? 0.75),
-      citations: Array.isArray(parsed.citations) ? parsed.citations : []
-    };
-  } catch {
-    return null;
-  }
-}
-
 export async function POST(request: NextRequest) {
-  const input = (await request.json()) as AgentInput;
+  const body = (await request.json()) as Partial<AgentInput>;
+  const question = body.question?.trim() ?? "";
+  const patientId = body.patientId?.trim() ?? "P-10983";
+  const encounterId = body.encounterId?.trim() ?? "E-77210";
 
-  if (!input?.question || !input?.billingRecord || !Array.isArray(input?.policySnippets)) {
-    return NextResponse.json({ error: "Invalid request payload" }, { status: 400 });
+  if (!question) {
+    return NextResponse.json({ error: "question is required" }, { status: 400 });
   }
 
-  const connected = hasMavenCredentials();
-  const mavenResponse = connected ? await callMaven(input) : null;
-
-  const fallback = buildDeterministicResponse(input);
-  const final = mavenResponse
-    ? {
-        ...mavenResponse,
-        citations: mavenResponse.citations.length ? mavenResponse.citations : fallback.citations
-      }
-    : fallback;
-
-  return NextResponse.json(final);
+  return NextResponse.json(
+    buildToolDrivenResponse({
+      question,
+      patientId,
+      encounterId
+    })
+  );
 }
